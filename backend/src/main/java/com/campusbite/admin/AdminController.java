@@ -1,0 +1,27 @@
+package com.campusbite.admin;
+import com.campusbite.users.*; import com.campusbite.orders.*; import com.campusbite.menu.*;
+import jakarta.validation.Valid; import org.springframework.http.HttpStatus; import org.springframework.security.access.prepost.PreAuthorize; import org.springframework.security.crypto.password.PasswordEncoder; import org.springframework.web.bind.annotation.*; import org.springframework.web.server.ResponseStatusException;
+import java.time.*; import java.util.*;
+@RestController @RequestMapping("/api/admin") @PreAuthorize("hasAnyRole('ADMIN','OWNER')") public class AdminController {
+ private static final Set<String> OUTLETS=Set.of("Normal Campus Canteen","Normal Canteen","Nescafé","Amul","Juice Corner");
+ private final UserRepository users; private final OrderRepository orders; private final MenuItemRepository menu; private final PasswordEncoder encoder;
+ public AdminController(UserRepository u,OrderRepository o,MenuItemRepository m,PasswordEncoder e){users=u;orders=o;menu=m;encoder=e;}
+ @GetMapping("/dashboard") public Map<String,Object> dashboard(){List<CampusOrder> all=orders.findAll(); double revenue=all.stream().filter(x->x.getStatus()==OrderStatus.DELIVERED).mapToDouble(CampusOrder::getTotal).sum(); return Map.ofEntries(
+     Map.entry("totalOrders", all.size()),
+     Map.entry("pendingOrders", orders.countByStatus(OrderStatus.PENDING)),
+     Map.entry("preparingOrders", orders.countByStatus(OrderStatus.PREPARING)),
+     Map.entry("readyOrders", orders.countByStatus(OrderStatus.READY)),
+     Map.entry("deliveredOrders", orders.countByStatus(OrderStatus.DELIVERED)),
+     Map.entry("cancelledOrders", orders.countByStatus(OrderStatus.CANCELLED)),
+     Map.entry("revenueFromDeliveredOrders", Math.round(revenue * 100.0) / 100.0),
+     Map.entry("menuItems", menu.count()),
+     Map.entry("customers", users.countByRole(Role.CUSTOMER)),
+     Map.entry("staff", users.countByRole(Role.STAFF)),
+     Map.entry("admins", users.countByRole(Role.ADMIN))
+ );}
+ @GetMapping("/outlets") public List<Map<String,Object>> outletStats(){List<Map<String,Object>> result=new ArrayList<>(); for(String outlet:OUTLETS){List<CampusOrder> list=orders.findAll().stream().filter(o->o.getOutlet().equalsIgnoreCase(outlet)).toList(); double rev=list.stream().filter(o->o.getStatus()==OrderStatus.DELIVERED).mapToDouble(CampusOrder::getTotal).sum(); result.add(Map.of("outlet",outlet,"orders",list.size(),"activeOrders",list.stream().filter(o->List.of(OrderStatus.PENDING,OrderStatus.ACCEPTED,OrderStatus.PREPARING,OrderStatus.READY).contains(o.getStatus())).count(),"deliveredRevenue",Math.round(rev*100.0)/100.0,"menuItems",menu.countByOutlet(outlet)));} return result;}
+ @GetMapping("/users") public List<Map<String,Object>> team(){return users.findByRoleInOrderByCreatedAtDesc(List.of(Role.STAFF,Role.ADMIN,Role.OWNER)).stream().map(u->Map.<String,Object>of("id",u.getId(),"name",u.getName(),"email",u.getEmail(),"role",u.getRole(),"assignedOutlet",u.getAssignedOutlet()==null?"":u.getAssignedOutlet(),"enabled",u.isEnabled())).toList();}
+ @PostMapping("/users") @PreAuthorize("hasRole('OWNER') or hasRole('ADMIN')") @ResponseStatus(HttpStatus.CREATED) public Map<String,Object> createTeamUser(@Valid @RequestBody CreateTeamUserRequest r,org.springframework.security.core.Authentication auth){AppUser creator=users.findByEmail(auth.getName()).orElseThrow(); if(r.role()!=Role.STAFF&&r.role()!=Role.ADMIN)throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Only STAFF or ADMIN team accounts can be created here"); if(creator.getRole()==Role.ADMIN&&r.role()!=Role.STAFF)throw new ResponseStatusException(HttpStatus.FORBIDDEN,"Admins can create staff accounts only"); if(r.role()==Role.STAFF){if(r.assignedOutlet()==null||!OUTLETS.contains(r.assignedOutlet()))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"A valid assignedOutlet is required for staff");} else if(r.assignedOutlet()!=null&&!r.assignedOutlet().isBlank())throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Only staff accounts can have an assigned outlet"); String email=r.email().trim().toLowerCase(); if(users.existsByEmail(email))throw new ResponseStatusException(HttpStatus.CONFLICT,"Email already exists"); AppUser u=users.save(new AppUser(r.name().trim(),email,encoder.encode(r.password()),r.role(),r.assignedOutlet())); return Map.of("id",u.getId(),"name",u.getName(),"email",u.getEmail(),"role",u.getRole(),"assignedOutlet",u.getAssignedOutlet()==null?"":u.getAssignedOutlet());}
+ @PatchMapping("/users/{id}/enabled") @PreAuthorize("hasRole('OWNER') or hasRole('ADMIN')") public Map<String,Object> enabled(@PathVariable String id,@Valid @RequestBody UpdateUserRequest r,org.springframework.security.core.Authentication auth){AppUser actor=users.findByEmail(auth.getName()).orElseThrow(); AppUser target=users.findById(id).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND,"User not found")); if(actor.getRole()==Role.ADMIN&&target.getRole()!=Role.STAFF)throw new ResponseStatusException(HttpStatus.FORBIDDEN,"Admins can manage staff accounts only"); if(target.getRole()==Role.OWNER)throw new ResponseStatusException(HttpStatus.FORBIDDEN,"Owner account cannot be disabled here"); target.setEnabled(r.enabled()); users.save(target); return Map.of("id",id,"enabled",target.isEnabled());}
+ @GetMapping("/low-stock") public List<MenuItem> lowStock(@RequestParam(defaultValue="5") int threshold){return menu.findByStockLessThanEqualOrderByStockAsc(threshold);}
+}
