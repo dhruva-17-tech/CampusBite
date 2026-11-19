@@ -1,154 +1,229 @@
-🍽️ CampusBite
-CampusBite is a web-based campus food ordering and management system. It connects customers with campus food outlets and provides separate tools for staff, owners, and administrators to manage orders and day-to-day operations.
-✨ Features
-Customer
-- Register, log in, and browse food items by outlet.
-- Place orders and view personal orders.
-- Follow order progress and view outlet queue information.
-- View loyalty information, submit food ratings, and send cooking requests.
-Staff
-- View orders and queue information for an outlet.
-- Update order status as orders move through preparation and collection.
-Owner and Admin
-- Manage outlets and team accounts.
-- View dashboard information and low-stock items.
-- Manage menu availability and stock.
-- Manage suppliers, purchase orders, and staff shifts.
-Access to management features depends on the signed-in user's role and permissions.
-🔄 How CampusBite works
-1. A customer, staff member, owner, or admin uses the frontend in a web browser.
-2. The frontend sends HTTP requests to the Spring Boot backend through REST API endpoints.
-3. After login, the frontend stores the returned JWT and sends it with protected requests as a Bearer token.
-4. Spring Security checks authentication and access permissions.
-5. The backend applies the application logic and reads or updates the MongoDB database.
-6. The backend returns a response, and the frontend refreshes the relevant information.
-Order lifecycle
-A typical order progresses through these statuses:
 
-PENDING → ACCEPTED → PREPARING → READY → DELIVERED
+# 🍽️ CampusBite
 
-An order may also be cancelled when cancellation is permitted. Customers can check their orders and queue information, while outlet staff handle order preparation and status updates.
-🧰 Technology stack
-Part	Technologies
-Frontend	HTML, CSS, JavaScript
-Backend	Java 21, Spring Boot
-API	REST, HTTP, JSON
-Database	MongoDB
-Authentication	Spring Security, JWT
-Build	Maven Wrapper
+### A Smart Campus Food Ordering & Management System
 
+CampusBite is a web-based food ordering and management platform designed to simplify campus food services. It allows customers to browse menus, place orders, and track their orders, while providing dedicated dashboards for staff, owners, and administrators to manage food outlets and daily operations.
 
-📁 Project structure
+---
+
+## ✨ Features
+
+### 👨‍🎓 Customer
+- User registration and login.
+- Browse food menus and available items.
+- Place food orders.
+- Track order status and queue information.
+- Loyalty points and discount coupons.
+- Submit food ratings and cooking requests.
+
+### 👨‍🍳 Staff
+- View incoming orders.
+- Manage assigned outlet orders.
+- Update order preparation status.
+- Handle order collection.
+
+### 👨‍💼 Owner
+- Manage food outlets and menus.
+- Manage staff accounts and shifts.
+- Monitor orders and inventory.
+- Manage suppliers and purchase orders.
+- View business dashboard.
+
+### 🛡️ Administrator
+- Manage users and outlets.
+- Monitor system operations.
+- Access administrative dashboards.
+
+---
+
+## ⚙️ How It Works
+
+CampusBite follows a client-server architecture.
+
+1. **Frontend:** Users interact with the application through a web browser.
+2. **Backend API:** Spring Boot receives HTTP requests from the frontend.
+3. **Authentication:** Spring Security validates JWT tokens and user permissions.
+4. **Controller:** Handles incoming requests and delegates operations.
+5. **Service Layer:** Implements business logic and application rules.
+6. **Repository Layer:** Communicates with MongoDB.
+7. **Database:** Stores users, outlets, menu items, orders, and other application data.
+
+### 🔄 Order Workflow
+
+Orders generally follow this lifecycle:
+
+`PENDING → ACCEPTED → PREPARING → READY → DELIVERED`
+
+Customers can track their orders, while staff members update the order status as preparation progresses.
+
+---
+
+## 🛠️ Technology Stack
+
+| Component | Technology |
+|---|---|
+| Frontend | HTML, CSS, JavaScript |
+| Backend | Java 21, Spring Boot |
+| Database | MongoDB |
+| API | REST API |
+| Authentication | Spring Security, JWT |
+| Build Tool | Maven |
+
+---
+
+## 📁 Project Structure
+
+```text
 CampusBite/
+│
 ├── frontend/
 │   ├── index.html
 │   ├── styles.css
 │   ├── app.js
 │   └── backend-integration.js
+│
 ├── backend/
 │   ├── src/
 │   │   ├── main/
 │   │   └── test/
 │   ├── pom.xml
 │   └── mvnw
-├── .github/
+│
 ├── CampusBite.postman_collection.json
 ├── START_PROJECT.md
 └── README.md
-- frontend/ — user interface, styling, and JavaScript used to communicate with the backend.
-- backend/ — Spring Boot application, REST controllers, services, security, and MongoDB integration.
-- CampusBite.postman_collection.json — Postman collection for testing API requests.
-- START_PROJECT.md — additional project startup instructions.
-🚀 Run the project locally
-Prerequisites
-- Java 21 or newer
-- MongoDB Atlas account or a local MongoDB server
+```
+
+---
+
+## 🚀 Installation & Setup
+
+### Prerequisites
+
+- Java 21 or above
+- MongoDB (Local or Atlas)
 - Python 3
-- Internet connection for downloading Maven dependencies
-The Maven Wrapper is included, so a separate Maven installation is not required.
-1. Get the project
-Clone the repository and enter the project directory:
+- Git
+
+### 1. Clone the Repository
+
+```bash
 git clone https://github.com/dhruva-17-tech/CampusBite.git
+
 cd CampusBite
-2. Configure MongoDB
-Choose either MongoDB Atlas or a local MongoDB server.
+```
 
-MongoDB Atlas
+### 2. Configure MongoDB
 
-Set your connection URI in the terminal that will run the backend:
-export MONGODB_URI='mongodb+srv://<username>:<password>@<cluster-host>/campusbite?retryWrites=true&w=majority'
-Replace the placeholders with your own Atlas details. Allow your IP address in Atlas Network Access and URL-encode special characters in the database password.
+For local MongoDB:
 
-Local MongoDB
-
-Start your local MongoDB server and set:
+```bash
 export MONGODB_URI='mongodb://localhost:27017/campusbite'
-3. Start the backend
-From the project root:
+```
+
+For MongoDB Atlas, configure your Atlas connection URI instead.
+
+### 3. Start the Backend
+
+```bash
 cd backend
+```
 
+Configure the required environment variables:
+
+```bash
 export JWT_SECRET="$(openssl rand -base64 32)"
+
 export CAMPUSBITE_BOOTSTRAP_OWNER_EMAIL='owner@campusbite.local'
-export CAMPUSBITE_BOOTSTRAP_OWNER_PASSWORD='Choose-A-Strong-Password'
+
+export CAMPUSBITE_BOOTSTRAP_OWNER_PASSWORD='Your-Strong-Password'
+
 export CAMPUSBITE_BOOTSTRAP_OWNER_NAME='CampusBite Owner'
+```
 
+Compile and run:
+
+```bash
 ./mvnw clean compile
+
 ./mvnw spring-boot:run
-Keep this terminal open. The backend runs at:
-- API base: http://localhost:8080
-- Health check: http://localhost:8080/api/health
-The bootstrap settings create the initial owner account if it does not already exist. They do not reset the password of an existing account. Use a strong password and keep your JWT secret stable between restarts if you want existing sessions to remain valid.
-4. Start the frontend
-Open a second terminal. From the project root:
+```
+
+Backend runs at:
+
+`http://localhost:8080`
+
+Health check:
+
+`http://localhost:8080/api/health`
+
+### 4. Start the Frontend
+
+Open another terminal:
+
+```bash
 cd frontend
+
 python3 -m http.server 5500
-Open the frontend in your browser:
+```
 
-http://localhost:5500
+Open your browser:
 
-Keep both terminals running while using the application.
-5. Set up accounts
-- Public registration creates customer accounts.
-- The initial owner account is configured using the bootstrap environment variables in Step 3.
-- Owners can create team accounts through the Owner dashboard.
-- Staff accounts need to be assigned to an outlet.
-- The staff/admin registration access code defaults to CAMPUS-STAFF. It can be changed using the CAMPUSBITE_STAFF_SIGNUP_CODE environment variable.
-🔌 Main API areas
-The backend exposes REST endpoints under /api.
-Endpoint	Purpose
-/api/health	Backend health check
-/api/auth	Registration and login
-/api/users	Current-user information
-/api/menu	Browse and manage menu items
-/api/orders	Place orders, view orders, queues, and update order status
-/api/admin	Admin dashboard, outlets, and team-user management
-/api/inventory	Stock, restocking, and availability
-/api/suppliers	Supplier management
-/api/purchases	Purchase-order management
-/api/shifts	Staff shift management
-/api/ratings	Food ratings
-/api/loyalty	Customer loyalty information
-/api/cooking-requests	Cooking requests
+`http://localhost:5500`
 
+Keep both servers running while using the application.
 
-For detailed request formats, use the included Postman collection and the backend controller classes.
-🔐 Configuration and security
-The backend supports these environment variables:
-Variable	Purpose
-MONGODB_URI	MongoDB connection string
-JWT_SECRET	Secret used to sign JWTs
-CAMPUSBITE_BOOTSTRAP_OWNER_EMAIL	Initial owner email
-CAMPUSBITE_BOOTSTRAP_OWNER_PASSWORD	Initial owner password
-CAMPUSBITE_BOOTSTRAP_OWNER_NAME	Initial owner display name
-CAMPUSBITE_STAFF_SIGNUP_CODE	Staff/admin registration access code
+---
 
+## 🔌 Main API Endpoints
 
-Never commit real database credentials, passwords, JWT secrets, or other private configuration to GitHub.
-🛠️ Troubleshooting
-- MongoDB connection error: Check MONGODB_URI, confirm MongoDB is running, and verify Atlas Network Access settings.
-- Backend port is busy: Port 8080 is already in use. Stop the other process or change the backend server port and frontend API configuration.
-- Frontend port is busy: Use another port, for example python3 -m http.server 5501.
-- Login/session issue after restart: Keep the same JWT_SECRET between backend starts, or log in again after changing it.
-- Maven build issue: Check your internet connection and retry ./mvnw clean compile.
-To stop either server, press Control + C in its terminal.
-CampusBite — making campus food ordering and outlet management simpler.
+| Endpoint | Function |
+|---|---|
+| `/api/health` | Backend health check |
+| `/api/auth` | Authentication |
+| `/api/users` | User management |
+| `/api/menu` | Menu management |
+| `/api/orders` | Order management |
+| `/api/admin` | Administrative operations |
+| `/api/inventory` | Inventory management |
+| `/api/suppliers` | Supplier management |
+| `/api/purchases` | Purchase orders |
+| `/api/shifts` | Staff shift management |
+| `/api/ratings` | Food ratings |
+| `/api/loyalty` | Loyalty management |
+| `/api/cooking-requests` | Cooking requests |
+
+---
+
+## 🔐 Security
+
+- JWT-based authentication.
+- Role-based access control.
+- Protected backend endpoints.
+- Secure password handling.
+- Restricted administrative operations.
+
+**Note:** Never upload database credentials, passwords, or JWT secrets to GitHub.
+
+---
+
+## 🧪 API Testing
+
+The project includes a Postman collection:
+
+`CampusBite.postman_collection.json`
+
+Import it into Postman to test the available backend API endpoints.
+
+---
+
+## 🎯 Project Objective
+
+The objective of CampusBite is to digitize campus food services by providing a centralized platform for food ordering, order tracking, outlet management, and inventory operations.
+
+---
+
+### 👥 CampusBite
+
+**Making Campus Food Ordering Smarter, Faster, and Easier.**
